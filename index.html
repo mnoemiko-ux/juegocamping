@@ -68,8 +68,8 @@ const rp=box(2.4,.3,26,0x1e88e5,0,7,-TOB+6);rp.rotation.x=.52;box(7,.2,12,0x28b6
 // monedas
 const coins=[];for(let z=8;z<TOB-8;z+=6){const m=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.12,16),M(0xffd23f));m.rotation.x=Math.PI/2;const l=Math.floor(Math.random()*3)-1;m.position.set(l*2.2,1.2,-z);m.userData={l,z};sc.add(m);coins.push(m)}
 // persona
-const cc=document.createElement('canvas');cc.width=320;cc.height=240;const cx=cc.getContext('2d',{willReadFrequently:true});
-const ptex=new THREE.CanvasTexture(cc);const pl=new THREE.Mesh(new THREE.PlaneGeometry(2.4,1.8),new THREE.MeshBasicMaterial({map:ptex,transparent:true,side:THREE.DoubleSide}));pl.scale.x=-1;sc.add(pl);
+const cc=document.createElement('canvas');cc.width=480;cc.height=360;const cx=cc.getContext('2d',{willReadFrequently:true});
+const ptex=new THREE.CanvasTexture(cc);ptex.colorSpace=THREE.SRGBColorSpace;ptex.minFilter=THREE.LinearFilter;ptex.generateMipmaps=false;const pl=new THREE.Mesh(new THREE.PlaneGeometry(3.2,2.4),new THREE.MeshBasicMaterial({map:ptex,transparent:true,side:THREE.DoubleSide,fog:false,depthWrite:false,alphaTest:.02}));pl.scale.x=-1;sc.add(pl);
 const sh=new THREE.Mesh(new THREE.CircleGeometry(.9,24),new THREE.MeshBasicMaterial({color:0,transparent:true,opacity:.35}));sh.rotation.x=-Math.PI/2;sc.add(sh);
 function rs(){R.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',rs);rs();
 // ---------- Cámara + MediaPipe ----------
@@ -87,9 +87,15 @@ function detect(){
  const r=PL.detectForVideo(vid,performance.now());
  lm=r.landmarks&&r.landmarks[0]?r.landmarks[0].map(p=>({x:1-p.x,y:p.y,v:p.visibility})):null;
  const mk=r.segmentationMasks&&r.segmentationMasks[0];
- if(mk){const w=mk.width,h=mk.height,a=mk.getAsFloat32Array();if(cc.width!==w){cc.width=w;cc.height=h}
-  cx.drawImage(vid,0,0,w,h);const im=cx.getImageData(0,0,w,h),d=im.data;
-  for(let i=0;i<a.length;i++)d[i*4+3]=clamp((a[i]-.3)/.4,0,1)*255;cx.putImageData(im,0,0);ptex.needsUpdate=true;mk.close()}
+ // el canvas mantiene SIEMPRE el mismo tamaño (cambiarlo rompe la textura de WebGL2 y el rostro no se ve)
+ const W=cc.width,H=cc.height;cx.drawImage(vid,0,0,W,H);const im=cx.getImageData(0,0,W,H),d=im.data;
+ let okMask=false;
+ if(mk){try{const w=mk.width,h=mk.height,a=mk.getAsFloat32Array();let s=0;for(let i=0;i<a.length;i+=7)s+=a[i];const cov=s/(a.length/7);
+  if(cov>.01&&cov<.97){okMask=true;for(let y=0;y<H;y++){const my=Math.min(h-1,(y*h/H)|0)*w;for(let x=0;x<W;x++){const m=a[my+Math.min(w-1,(x*w/W)|0)];d[(y*W+x)*4+3]=clamp((m-.3)/.4,0,1)*255}}}}catch(e){}
+  try{mk.close()}catch(e){}}
+ if(!okMask){ // plan B: recorte ovalado para que el rostro y el torso siempre se vean
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const nx=(x/W-.5)/.42,ny=(y/H-.55)/.52;d[(y*W+x)*4+3]=nx*nx+ny*ny<1?255:0}}
+ cx.putImageData(im,0,0);ptex.needsUpdate=true;
 }
 // ---------- Gestos ----------
 const G={kneeL:0,kneeR:0,last:'',hip:0,hipRaw:0,hand:{L:0,R:0},tL:0,tR:0};
@@ -154,8 +160,8 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-prev)/
  $('hs').textContent='Puntaje '+S.score;$('hl').textContent=S.ph==='tob'?'Vidas '+'♥'.repeat(Math.max(0,S.lives)):'Pasos '+S.steps;
  // escena
  const on=S.ph==='tob'||S.ph==='fall';
- if(!on){const x=S.lane*2.2;pl.position.set(x,.95,-S.z-3.5);pl.rotation.z=0;sh.position.set(x,.03,-S.z-3.5);cam.position.set(x*.6,2.4,-S.z+1);cam.lookAt(x,1.4,-S.z-8)}
- else{const y=S.ph==='fall'?Math.max(.4,15-S.fall*10):15.2;pl.position.set(0,y,-TOB-10-3);pl.rotation.z=S.ph==='fall'?S.tilt*2+S.fall*3:-S.tilt*.55;sh.position.set(0,14.45,-TOB-13);sh.visible=S.ph!=='fall';cam.position.set(0,17,-TOB-6);cam.lookAt(0,14.5,-TOB-16)}
+ if(!on){const x=S.lane*2.2;pl.position.set(x,1.25,-S.z-3.5);pl.rotation.z=0;sh.position.set(x,.03,-S.z-3.5);cam.position.set(x*.6,2.4,-S.z+1);cam.lookAt(x,1.4,-S.z-8)}
+ else{const y=S.ph==='fall'?Math.max(.4,15-S.fall*10):15.2;pl.position.set(0,y+.4,-TOB-10-3);pl.rotation.z=S.ph==='fall'?S.tilt*2+S.fall*3:-S.tilt*.55;sh.position.set(0,14.45,-TOB-13);sh.visible=S.ph!=='fall';cam.position.set(0,17,-TOB-8);cam.lookAt(0,14.5,-TOB-16)}
  R.render(sc,cam);
 }
 requestAnimationFrame(loop);
