@@ -30,7 +30,7 @@ img.t{width:260px;border-radius:12px;border:3px solid #fff}
 <p>Recorré el camping municipal y llegá al tobogán del parque acuático: ¡arriba hay que tambalearse sin caerse!</p>
 <small>Necesitás unos 2 metros libres frente a la cámara y buena luz de frente. La imagen se procesa en tu computadora: no se guarda ni se envía a internet. Nadie juega si no quiere; para grabar videos con menores se pide autorización a las familias.</small>
 <div><button id="b-cam">Jugar con cámara</button><button class="s" id="b-key">Sin cámara (teclado)</button><button class="s" id="b-sit">Modo sentado</button></div>
-<small>Caminá en el lugar = avanzar · Paso al costado = carril · Mano arriba = agarrar / responder (izq = A, der = B) · En el tobogán, inclinate y corré el cuerpo al lado contrario para recuperar el equilibrio.<br>Teclado: Espacio/W caminar · ← → carril · A/D responder · en el tobogán, ← → compensan.</small>
+<small>Avanzás solo · Paso al costado = cambiás de carril y juntás monedas · Mano arriba = responder (izq = A, der = B) · En el tobogán, inclinate y corré el cuerpo al lado contrario para recuperar el equilibrio.<br>Teclado: ← → carril · A/D responder · en el tobogán, ← → compensan.</small>
 <small id="err" style="color:#ffb3b3"></small></div>
 
 <div class="pan" id="p-fic"><h1 id="f-t"></h1><p id="f-d"></p><p id="f-q"></p><div class="opt"><div id="f-a"></div><div id="f-b"></div></div><small id="f-f"></small></div>
@@ -46,7 +46,7 @@ const FICHAS=[
  {at:70,t:'Las piscinas',d:'El camping municipal cuenta con un complejo con siete piscinas y juegos de agua para niños y adultos.',q:'¿Cuántas piscinas tiene el complejo?',a:'Siete',b:'Tres',ok:0,f:'Fuente: nota de prensa sobre el camping municipal El Colorado · [verificar con la Municipalidad]'}];
 const TOB=110, FIN_T=25; // distancia al tobogán y segundos de equilibrio
 // ---------- Estado ----------
-const S={ph:'ini',cam:false,sit:false,z:0,lane:0,vel:0,steps:0,score:0,coins:0,ok:0,fi:0,mov:0,t0:0,lives:3,tilt:0,bt:0,drift:0,over:0,fall:0};
+const S={ph:'ini',cam:false,sit:false,z:0,lane:0,x:0,_pl:0,vel:0,steps:0,score:0,coins:0,ok:0,fi:0,mov:0,t0:0,lives:3,tilt:0,bt:0,drift:0,over:0,fall:0};
 const K={};addEventListener('keydown',e=>{K[e.key.toLowerCase()]=1;if(S.ph==='fic'&&(e.key==='a'||e.key==='d'))answer(e.key==='a'?0:1)});addEventListener('keyup',e=>K[e.key.toLowerCase()]=0);
 // ---------- Three ----------
 const cv=$('c'),R=new THREE.WebGLRenderer({canvas:cv,antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,1.5));
@@ -106,10 +106,10 @@ function gestures(dt){
  if(S.ph==='cal'){CAL=CAL||{n:0,hx:0,kl:0,kr:0,sw:0};if(hL&&hR){CAL.n++;CAL.hx+=(hL.x+hR.x)/2;CAL.sw+=sw;if(kL)CAL.kl+=kL.y;if(kR)CAL.kr+=kR.y}return}
  if(!CAL||!CAL.n)return;const bx=CAL.hx/CAL.n,bsw=CAL.sw/CAL.n,bkl=CAL.kl/CAL.n,bkr=CAL.kr/CAL.n;
  if(hL&&hR){G.hipRaw=((hL.x+hR.x)/2-bx)/bsw;G.hip+=(G.hipRaw-G.hip)*.45}
- if(!S.sit&&kL&&kR){const uL=(bkl-kL.y)/bsw>.15,uR=(bkr-kR.y)/bsw>.15;
+ if(false){const uL=(bkl-kL.y)/bsw>.15,uR=(bkr-kR.y)/bsw>.15;
   if(uL&&G.last!=='L'){G.last='L';S.steps++;S.vel=Math.min(7,S.vel+2.2);S.mov+=.4}
   if(uR&&G.last!=='R'){G.last='R';S.steps++;S.vel=Math.min(7,S.vel+2.2);S.mov+=.4}}
- if(S.sit){const up=(w)=>w&&(sL.y+sR.y)/2-w.y>0;const l=up(wL),r=up(wR);if(l&&G.last!=='L'){G.last='L';S.steps++;S.vel=Math.min(7,S.vel+2.2)}if(r&&G.last!=='R'){G.last='R';S.steps++;S.vel=Math.min(7,S.vel+2.2)}}
+ if(false){const up=(w)=>w&&(sL.y+sR.y)/2-w.y>0;const l=up(wL),r=up(wR);if(l&&G.last!=='L'){G.last='L';S.steps++;S.vel=Math.min(7,S.vel+2.2)}if(r&&G.last!=='R'){G.last='R';S.steps++;S.vel=Math.min(7,S.vel+2.2)}}
  const up=(w,s)=>w&&(s.y-w.y)/bsw>.1;
  G.tL=up(wL,sL)?G.tL+dt:0;G.tR=up(wR,sR)?G.tR+dt:0;
  skel(sL,sR,hL,hR,kL,kR,wL,wR);
@@ -127,9 +127,9 @@ async function begin(cam,sit){S.cam=cam;S.sit=sit;
 function go(){Object.assign(S,{ph:'run',z:0,lane:0,vel:0,steps:0,score:0,coins:0,ok:0,fi:0,mov:0,lives:3,tilt:0,bt:0,over:0,fall:0,t0:performance.now(),tt:performance.now()});coins.forEach(c=>c.visible=true);$('big').style.display='none'}
 function ficha(i){S.ph='fic';S.vel=0;const f=FICHAS[i];$('f-t').textContent=f.t;$('f-d').textContent=f.d;$('f-q').textContent=f.q;$('f-a').textContent='A (mano izq.) · '+f.a;$('f-b').textContent='B (mano der.) · '+f.b;$('f-f').textContent=f.f;show('p-fic');S.hold=0}
 function answer(o){if(S.ph!=='fic')return;const f=FICHAS[S.fi];if(o===f.ok){S.ok++;S.score+=100}S.fi++;show('');S.ph='run'}
-function fin(win){S.ph='fin';const tt=(performance.now()-S.tt)/1000,h=(S.mov+tt*.3)/3600;const kcal=(3.5*50*h).toFixed(1);
+function fin(win){S.ph='fin';const tt=(performance.now()-S.tt)/1000,h=S.mov/3600;const kcal=(3.5*50*h).toFixed(1);
  $('e-t').textContent=win?'¡Te mantuviste arriba del tobogán!':'¡Splash! Te caíste al agua';
- $('e-d').textContent='Puntaje '+S.score+' · Pasos '+S.steps+' · Monedas '+S.coins+' · Respuestas correctas '+S.ok+'/'+FICHAS.length+' · Tiempo en movimiento '+Math.round(S.mov*1+tt*.3)+' s · Calorías estimadas '+kcal;show('p-fin')}
+ $('e-d').textContent='Puntaje '+S.score+' · Cambios de carril '+S.steps+' · Monedas '+S.coins+' · Respuestas correctas '+S.ok+'/'+FICHAS.length+' · Tiempo en movimiento '+Math.round(S.mov)+' s · Calorías estimadas '+kcal;show('p-fin')}
 $('b-cam').onclick=()=>begin(true,false);$('b-key').onclick=()=>begin(false,false);$('b-sit').onclick=()=>begin(true,true);$('b-re').onclick=()=>{show('p-ini')};
 // ---------- Bucle ----------
 let prev=performance.now();
@@ -138,11 +138,11 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-prev)/
  $('gi').textContent=S.cam?'Cámara: '+(lm?'te veo ✔':'no te veo'):'Modo teclado';
  if(S.ph==='cal'){const r=3-(now-S.t0)/1000;$('big').style.display='flex';$('big').textContent=r>0?Math.ceil(r):'¡Ya!';if(r<=-.5)go()}
  if(S.ph==='run'){
-  if(K[' ']||K['w']){S.vel=Math.min(7,S.vel+dt*8);S.mov+=dt}
+  S.vel=4.5;S.mov+=dt; // avance automático
   if(!S.cam||true){if(K['arrowleft']&&!S._l){S.lane=clamp(S.lane-1,-1,1);S._l=1}if(!K['arrowleft'])S._l=0;if(K['arrowright']&&!S._r){S.lane=clamp(S.lane+1,-1,1);S._r=1}if(!K['arrowright'])S._r=0}
   if(S.cam&&!S.sit){S.lane=G.hip>.35?-1:G.hip<-.35?1:0; S.lane=G.hip>.35?1:G.hip<-.35?-1:0}
-  S.vel=Math.max(0,S.vel-dt*2.2);S.z+=S.vel*dt;
-  coins.forEach(c=>{if(c.visible&&Math.abs(c.userData.z-S.z)<1.6&&c.userData.l===S.lane&&(handL()||handR()||!S.cam&&S.vel>0)){c.visible=false;S.coins++;S.score+=10}c.rotation.z+=dt*3});
+  S.z+=S.vel*dt;if(S.lane!==S._pl){S.steps++;S._pl=S.lane}S.x+=(S.lane*2.2-S.x)*Math.min(1,dt*8);
+  coins.forEach(c=>{if(c.visible&&Math.abs(c.userData.z-S.z)<1.6&&c.userData.l===S.lane&&true){c.visible=false;S.coins++;S.score+=10}c.rotation.z+=dt*3});
   const f=FICHAS[S.fi];if(f&&S.z>=f.at)ficha(S.fi);
   if(S.z>=TOB-6){S.ph='tob';S.bt=0;S.tilt=0;S.drift=0;$('bal').style.display='block';$('tm').style.display='block'}
  }
@@ -157,10 +157,10 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-prev)/
   if(S.bt>=FIN_T){S.score+=300+S.lives*50;S.ph='fin';$('bal').style.display=$('tm').style.display='none';fin(true)}
  }
  if(S.ph==='fall'){S.fall+=dt;if(S.fall>1.4){$('bal').style.display=$('tm').style.display='none';fin(false)}}
- $('hs').textContent='Puntaje '+S.score;$('hl').textContent=S.ph==='tob'?'Vidas '+'♥'.repeat(Math.max(0,S.lives)):'Pasos '+S.steps;
+ $('hs').textContent='Puntaje '+S.score;$('hl').textContent=S.ph==='tob'?'Vidas '+'♥'.repeat(Math.max(0,S.lives)):'Desvíos '+S.steps;
  // escena
  const on=S.ph==='tob'||S.ph==='fall';
- if(!on){const x=S.lane*2.2;pl.position.set(x,1.25,-S.z-3.5);pl.rotation.z=0;sh.position.set(x,.03,-S.z-3.5);cam.position.set(x*.6,2.4,-S.z+1);cam.lookAt(x,1.4,-S.z-8)}
+ if(!on){const x=S.x;pl.position.set(x,1.25,-S.z-3.5);pl.rotation.z=0;sh.position.set(x,.03,-S.z-3.5);cam.position.set(x*.6,2.4,-S.z+1);cam.lookAt(x,1.4,-S.z-8)}
  else{const y=S.ph==='fall'?Math.max(.4,15-S.fall*10):15.2;pl.position.set(0,y+.4,-TOB-10-3);pl.rotation.z=S.ph==='fall'?S.tilt*2+S.fall*3:-S.tilt*.55;sh.position.set(0,14.45,-TOB-13);sh.visible=S.ph!=='fall';cam.position.set(0,17,-TOB-8);cam.lookAt(0,14.5,-TOB-16)}
  R.render(sc,cam);
 }
