@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8"><title>Camping El Colorado · Equilibrio en el tobogán</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E🌴%3C/text%3E%3C/svg%3E">
 <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#0b3d5c;font-family:system-ui,Arial,sans-serif;color:#fff}
 canvas#c{position:fixed;inset:0;width:100%;height:100%}
@@ -45,6 +45,7 @@ const FICHAS=[
  {at:30,t:'Cartel de entrada',d:'El Colorado es una localidad de la provincia de Formosa. Su cartel de bienvenida te recibe entre palmeras.',q:'¿En qué provincia está El Colorado?',a:'Formosa',b:'Chaco',ok:0,f:'Fuente: cartel de entrada · [a completar año de origen y fuente histórica]'},
  {at:70,t:'Las piscinas',d:'El camping municipal cuenta con un complejo con siete piscinas y juegos de agua para niños y adultos.',q:'¿Cuántas piscinas tiene el complejo?',a:'Siete',b:'Tres',ok:0,f:'Fuente: nota de prensa sobre el camping municipal El Colorado · [verificar con la Municipalidad]'}];
 const TOB=110, FIN_T=25; // distancia al tobogán y segundos de equilibrio
+addEventListener('error',e=>{const g=$('gi');if(g)g.textContent='Error: '+e.message});addEventListener('unhandledrejection',e=>{const g=$('gi');if(g)g.textContent='Error: '+(e.reason&&e.reason.message||e.reason)});
 // ---------- Estado ----------
 const S={ph:'ini',cam:false,sit:false,z:0,lane:0,x:0,_pl:0,vel:0,steps:0,score:0,coins:0,ok:0,fi:0,mov:0,t0:0,lives:3,tilt:0,bt:0,drift:0,over:0,fall:0};
 const K={};addEventListener('keydown',e=>{K[e.key.toLowerCase()]=1;if(S.ph==='fic'&&(e.key==='a'||e.key==='d'))answer(e.key==='a'?0:1)});addEventListener('keyup',e=>K[e.key.toLowerCase()]=0);
@@ -54,7 +55,7 @@ const sc=new THREE.Scene();sc.background=new THREE.Color(0x8fd3ff);sc.fog=new TH
 const cam=new THREE.PerspectiveCamera(60,1,.1,300);
 sc.add(new THREE.HemisphereLight(0xffffff,0x5b8a4a,1.1));const sun=new THREE.DirectionalLight(0xffffff,.8);sun.position.set(10,20,5);sc.add(sun);
 const M=(c)=>new THREE.MeshLambertMaterial({color:c}),box=(w,h,d,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(x,y,z);sc.add(m);return m};
-box(80,.2,400,0x4caf50,0,-.1,-150);box(7,.22,400,0xd9b88f,0,0,-150);
+box(80,.2,400,0x4caf50,0,-.1,-150);box(7,.22,400,0xd9b88f,0,0,-150);for(let i=0;i<100;i++)box(.3,.05,1.2,0xffffff,0,.13,-i*4);
 for(let i=0;i<40;i++){const z=-i*8-6;for(const s of[-1,1]){const x=s*(7+Math.random()*10);box(.5,3,.5,0x6b4a2b,x,1.5,z);const c=new THREE.Mesh(new THREE.ConeGeometry(2,4,6),M(0x2e8b3d));c.position.set(x,4.5,z);sc.add(c)}}
 // cartel (foto)
 const tex=new THREE.TextureLoader().load(document.querySelector('img.t').src);tex.colorSpace=THREE.SRGBColorSpace;
@@ -120,10 +121,11 @@ function skel(...p){const c=$('sk').getContext('2d');c.clearRect(0,0,160,120);c.
 const handL=()=>G.tL>.3||K['a'],handR=()=>G.tR>.3||K['d'];
 // ---------- Flujo ----------
 const show=id=>{['p-ini','p-fic','p-fin'].forEach(x=>$(x).style.display=x===id?'flex':'none')};
-async function begin(cam,sit){S.cam=cam;S.sit=sit;
- if(cam){try{await startCam()}catch(e){$('err').textContent='No se pudo abrir la cámara ('+e.message+'). Probá con Chrome, https o localhost, o jugá sin cámara.';return}}
- show('');$('hud').style.display='flex';
- if(cam){S.ph='cal';S.t0=performance.now();CAL=null}else go()}
+async function begin(cam,sit){S.sit=sit;S.cam=false;S.msg='';show('');$('hud').style.display='flex';go();
+ if(cam&&PL){S.cam=true;S.ph='cal';S.t0=performance.now();CAL=null;G.hip=0;return}
+ if(cam){S.msg='Cargando cámara… mientras tanto avanzás solo y movés con ← →';
+  startCam().then(()=>{S.msg='';S.cam=true;S.ph='cal';S.t0=performance.now();CAL=null;G.hip=0})
+  .catch(e=>{S.msg='No se pudo abrir la cámara ('+e.message+'). Seguís con el teclado ← →'})}}
 function go(){Object.assign(S,{ph:'run',z:0,lane:0,vel:0,steps:0,score:0,coins:0,ok:0,fi:0,mov:0,lives:3,tilt:0,bt:0,over:0,fall:0,t0:performance.now(),tt:performance.now()});coins.forEach(c=>c.visible=true);$('big').style.display='none'}
 function ficha(i){S.ph='fic';S.vel=0;const f=FICHAS[i];$('f-t').textContent=f.t;$('f-d').textContent=f.d;$('f-q').textContent=f.q;$('f-a').textContent='A (mano izq.) · '+f.a;$('f-b').textContent='B (mano der.) · '+f.b;$('f-f').textContent=f.f;show('p-fic');S.hold=0}
 function answer(o){if(S.ph!=='fic')return;const f=FICHAS[S.fi];if(o===f.ok){S.ok++;S.score+=100}S.fi++;show('');S.ph='run'}
@@ -133,9 +135,9 @@ function fin(win){S.ph='fin';const tt=(performance.now()-S.tt)/1000,h=S.mov/3600
 $('b-cam').onclick=()=>begin(true,false);$('b-key').onclick=()=>begin(false,false);$('b-sit').onclick=()=>begin(true,true);$('b-re').onclick=()=>{show('p-ini')};
 // ---------- Bucle ----------
 let prev=performance.now();
-function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-prev)/1000);prev=now;
+function loop(now){requestAnimationFrame(loop);try{const dt=Math.max(0,Math.min(.05,(now-prev)/1000));prev=now;
  if(S.cam)detect();gestures(dt);
- $('gi').textContent=S.cam?'Cámara: '+(lm?'te veo ✔':'no te veo'):'Modo teclado';
+ $('gi').textContent=S.cam?'Cámara: '+(lm?'te veo ✔':'no te veo'):(S.msg||'Modo teclado');
  if(S.ph==='cal'){const r=3-(now-S.t0)/1000;$('big').style.display='flex';$('big').textContent=r>0?Math.ceil(r):'¡Ya!';if(r<=-.5)go()}
  if(S.ph==='run'){
   S.vel=4.5;S.mov+=dt; // avance automático
@@ -157,12 +159,12 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-prev)/
   if(S.bt>=FIN_T){S.score+=300+S.lives*50;S.ph='fin';$('bal').style.display=$('tm').style.display='none';fin(true)}
  }
  if(S.ph==='fall'){S.fall+=dt;if(S.fall>1.4){$('bal').style.display=$('tm').style.display='none';fin(false)}}
- $('hs').textContent='Puntaje '+S.score;$('hl').textContent=S.ph==='tob'?'Vidas '+'♥'.repeat(Math.max(0,S.lives)):'Desvíos '+S.steps;
+ $('hs').textContent='Puntaje '+S.score;$('hl').textContent=S.ph==='tob'?'Vidas '+'♥'.repeat(Math.max(0,S.lives)):'Metros '+Math.floor(S.z)+' · Desvíos '+S.steps;
  // escena
  const on=S.ph==='tob'||S.ph==='fall';
  if(!on){const x=S.x;pl.position.set(x,1.25,-S.z-3.5);pl.rotation.z=0;sh.position.set(x,.03,-S.z-3.5);cam.position.set(x*.6,2.4,-S.z+1);cam.lookAt(x,1.4,-S.z-8)}
  else{const y=S.ph==='fall'?Math.max(.4,15-S.fall*10):15.2;pl.position.set(0,y+.4,-TOB-10-3);pl.rotation.z=S.ph==='fall'?S.tilt*2+S.fall*3:-S.tilt*.55;sh.position.set(0,14.45,-TOB-13);sh.visible=S.ph!=='fall';cam.position.set(0,17,-TOB-8);cam.lookAt(0,14.5,-TOB-16)}
- R.render(sc,cam);
+ R.render(sc,cam);}catch(e){$('gi').textContent='Error: '+e.message;console.error(e)}
 }
 requestAnimationFrame(loop);
 </script></body></html>
