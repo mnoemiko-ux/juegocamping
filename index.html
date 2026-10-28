@@ -4,15 +4,15 @@
 <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#0b3d5c;font-family:system-ui,Arial,sans-serif;color:#fff}
 canvas#c{position:fixed;inset:0;width:100%;height:100%}
-#hud{position:fixed;top:12px;left:16px;right:16px;display:flex;justify-content:space-between;font-size:34px;font-weight:800;text-shadow:0 2px 6px #000;pointer-events:none}
+#hud{position:fixed;top:12px;left:16px;right:16px;display:flex;justify-content:space-between;gap:10px;font-size:clamp(18px,4.5vw,34px);font-weight:800;text-shadow:0 2px 6px #000;pointer-events:none}
 #bal{position:fixed;left:50%;top:70px;transform:translateX(-50%);width:60%;height:34px;background:#0008;border:3px solid #fff;border-radius:20px;display:none}
 #bal .ok{position:absolute;left:30%;width:40%;top:0;bottom:0;background:#2ecc7155}
 #bal .m{position:absolute;top:-6px;width:12px;height:42px;background:#ffd23f;border-radius:6px;left:50%}
 #tm{position:fixed;left:50%;top:112px;transform:translateX(-50%);font-size:30px;font-weight:800;text-shadow:0 2px 6px #000;display:none}
 .pan{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#06263dd9;padding:24px;gap:14px}
-.pan h1{font-size:52px;margin:0}.pan p{font-size:28px;margin:0;max-width:900px}.pan small{font-size:18px;opacity:.85;max-width:820px}
+.pan{overflow:auto}.pan h1{font-size:clamp(26px,6vw,52px);margin:0}.pan p{font-size:clamp(17px,3.6vw,28px);margin:0;max-width:900px}.pan small{font-size:clamp(13px,2.6vw,18px);opacity:.85;max-width:820px}
 .opt{display:flex;gap:30px}.opt div{background:#fff;color:#06263d;border-radius:16px;padding:18px 26px;font-size:30px;font-weight:700;min-width:240px}
-button{font-size:30px;padding:14px 32px;border:0;border-radius:14px;background:#ffd23f;color:#06263d;font-weight:800;cursor:pointer;margin:4px}
+button{font-size:clamp(18px,4vw,30px);padding:12px 22px;border:0;border-radius:14px;background:#ffd23f;color:#06263d;font-weight:800;cursor:pointer;margin:4px}
 button.s{background:#fff}
 #sk{position:fixed;right:12px;bottom:12px;width:160px;height:120px;background:#0007;border-radius:10px}
 #gi{position:fixed;left:12px;bottom:12px;font-size:20px;background:#0007;padding:8px 12px;border-radius:10px}
@@ -23,7 +23,7 @@ img.t{width:260px;border-radius:12px;border:3px solid #fff}
 <canvas id="c"></canvas><video id="v" playsinline muted style="display:none"></video>
 <div id="hud"><span id="hs"></span><span id="hl"></span></div>
 <div id="bal"><div class="ok"></div><div class="m" id="mk"></div></div><div id="tm"></div>
-<canvas id="sk" width="160" height="120"></canvas><div id="ban"></div><div id="gi"></div><div id="big"></div>
+<canvas id="sk" width="160" height="120"></canvas><div id="ban"></div><div style="position:fixed;left:50%;bottom:4px;font-size:11px;opacity:.5;transform:translateX(-50%)">v8 · sin preguntas</div><div id="gi"></div><div id="big"></div>
 
 <div class="pan" id="p-ini" style="display:flex">
 <h1>Camping El Colorado</h1>
@@ -33,7 +33,6 @@ img.t{width:260px;border-radius:12px;border:3px solid #fff}
 <small>Avanzás solo · Paso al costado = cambiás de carril y juntás monedas · Sumás puntos juntando monedas, pasando por las piscinas y aguantando en el tobogán · En el tobogán, inclinate y corré el cuerpo al lado contrario para recuperar el equilibrio.<br>Teclado: ← → carril · A/D responder · en el tobogán, ← → compensan.</small>
 <small id="err" style="color:#ffb3b3"></small></div>
 
-<div class="pan" id="p-fic"><h1 id="f-t"></h1><p id="f-d"></p><p id="f-q"></p><div class="opt"><div id="f-a"></div><div id="f-b"></div></div><small id="f-f"></small></div>
 <div class="pan" id="p-fin"><h1 id="e-t"></h1><p id="e-d"></p><small>Calorías = 3,5 × peso (50 kg por defecto) × horas de juego. Es una <b>estimación</b>, no una medición.</small><button id="b-re">Volver a jugar</button></div>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
@@ -46,7 +45,7 @@ const TOB=110, FIN_T=25; // distancia al tobogán y segundos de equilibrio
 addEventListener('error',e=>{const g=$('gi');if(g)g.textContent='Error: '+e.message});addEventListener('unhandledrejection',e=>{const g=$('gi');if(g)g.textContent='Error: '+(e.reason&&e.reason.message||e.reason)});
 // ---------- Estado ----------
 const S={ph:'ini',cam:false,sit:false,z:0,lane:0,x:0,_pl:0,vel:0,steps:0,score:0,coins:0,ok:0,fi:0,mov:0,t0:0,lives:3,tilt:0,bt:0,drift:0,over:0,fall:0};
-const K={};addEventListener('keydown',e=>{K[e.key.toLowerCase()]=1;if(S.ph==='fic'&&(e.key==='a'||e.key==='d'))answer(e.key==='a'?0:1)});addEventListener('keyup',e=>K[e.key.toLowerCase()]=0);
+const K={};addEventListener('keydown',e=>{K[e.key.toLowerCase()]=1});addEventListener('keyup',e=>K[e.key.toLowerCase()]=0);
 // ---------- Three ----------
 const cv=$('c'),R=new THREE.WebGLRenderer({canvas:cv,antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,1.5));
 const sc=new THREE.Scene();sc.background=new THREE.Color(0x8fd3ff);sc.fog=new THREE.Fog(0x8fd3ff,40,160);
@@ -115,15 +114,13 @@ function skel(...p){const c=$('sk').getContext('2d');c.clearRect(0,0,160,120);c.
  link(0,1);link(0,2);link(1,3);link(2,3);link(2,4);link(3,5);link(0,6);link(1,7);P.forEach(q=>{c.fillStyle='#fff';c.fillRect(q[0]-2,q[1]-2,4,4)})}
 const handL=()=>G.tL>.3||K['a'],handR=()=>G.tR>.3||K['d'];
 // ---------- Flujo ----------
-const show=id=>{['p-ini','p-fic','p-fin'].forEach(x=>$(x).style.display=x===id?'flex':'none')};
+const show=id=>{['p-ini','p-fin'].forEach(x=>$(x).style.display=x===id?'flex':'none')};
 async function begin(cam,sit){S.sit=sit;S.cam=false;S.msg='';show('');$('hud').style.display='flex';go();
  if(cam&&PL){S.cam=true;S.ph='cal';S.t0=performance.now();CAL=null;G.hip=0;return}
  if(cam){S.msg='Cargando cámara… mientras tanto avanzás solo y movés con ← →';
   startCam().then(()=>{S.msg='';S.cam=true;S.ph='cal';S.t0=performance.now();CAL=null;G.hip=0})
   .catch(e=>{S.msg='No se pudo abrir la cámara ('+e.message+'). Seguís con el teclado ← →'})}}
 function go(){Object.assign(S,{ph:'run',z:0,lane:0,vel:0,steps:0,score:0,coins:0,ok:0,fi:0,mov:0,lives:3,tilt:0,bt:0,over:0,fall:0,t0:performance.now(),tt:performance.now()});coins.forEach(c=>c.visible=true);$('big').style.display='none'}
-function ficha(i){S.ph='fic';S.vel=0;const f=FICHAS[i];$('f-t').textContent=f.t;$('f-d').textContent=f.d;$('f-q').textContent=f.q;$('f-a').textContent='A (mano izq.) · '+f.a;$('f-b').textContent='B (mano der.) · '+f.b;$('f-f').textContent=f.f;show('p-fic');S.hold=0}
-function answer(o){if(S.ph!=='fic')return;const f=FICHAS[S.fi];if(o===f.ok){S.ok++;S.score+=100}S.fi++;show('');S.ph='run'}
 function fin(win){S.ph='fin';const tt=(performance.now()-S.tt)/1000,h=S.mov/3600;const kcal=(3.5*50*h).toFixed(1);
  $('e-t').textContent=win?'¡Te mantuviste arriba del tobogán!':'¡Splash! Te caíste al agua';
  $('e-d').textContent='Puntaje '+Math.round(S.score)+' · Cambios de carril '+S.steps+' · Monedas '+S.coins+' · Tiempo en movimiento '+Math.round(S.mov)+' s · Calorías estimadas '+kcal;show('p-fin')}
@@ -144,7 +141,6 @@ function loop(now){requestAnimationFrame(loop);try{const dt=Math.max(0,Math.min(
   const f=FICHAS[S.fi];if(f&&S.z>=f.at){S.fi++;S.score+=f.pts;showBan(f.t+' · +'+f.pts)}
   if(S.z>=TOB-6){S.ph='tob';S.bt=0;S.tilt=0;S.drift=0;$('bal').style.display='block';$('tm').style.display='block'}
  }
- if(S.ph==='fic'){if(handL())S.hold+=dt;else if(handR())S.hold-=dt;else S.hold*=.9;if(S.hold>.5)answer(0);if(S.hold<-.5)answer(1)}
  if(S.ph==='tob'){
   S.bt+=dt;S.score+=dt*10;const amp=.6+S.bt*.07; S.drift+=(Math.random()-.5)*amp*dt*6;S.drift=clamp(S.drift,-1.2,1.2);
   let lean=(K['arrowright']?1:0)-(K['arrowleft']?1:0);if(S.cam)lean=clamp(G.hip*1.8,-1.2,1.2);
